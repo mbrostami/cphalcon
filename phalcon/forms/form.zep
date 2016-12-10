@@ -712,7 +712,11 @@ class Form extends Injectable implements \Countable, \Iterator
 	public function rewind() -> void
 	{
 		let this->_position = 0;
-		let this->_elementsIndexed = array_values(this->_elements);
+		if typeof this->_elements == "array" {
+		    let this->_elementsIndexed = array_values(this->_elements);
+		} else {
+		    let this->_elementsIndexed = [];
+		}
 	}
 
 	/**
