@@ -94,7 +94,7 @@ class Redis extends Backend
 
 		if !isset options["statsKey"] {
 			// Disable tracking of cached keys per default
-			let options["statsKey"] = "";
+			let options["statsKey"] = false;
 		}
 
 		parent::__construct(frontend, options);
@@ -123,6 +123,15 @@ class Redis extends Backend
 		if !success {
 			throw new Exception("Could not connect to the Redisd server ".host.":".port);
 		}
+
+        /**
+        * use prefix on all keys
+        **/
+        let success = redis->setOption(\Redis::OPT_PREFIX, "_PHCR");
+
+        if !success {
+            throw new Exception("Failed to set option to the Redisd server");
+        }
 
 		if fetch auth, options["auth"] {
 			let success = redis->auth(auth);
@@ -158,7 +167,7 @@ class Redis extends Backend
 
 		let frontend = this->_frontend;
 		let prefix = this->_prefix;
-		let lastKey = "_PHCR" . prefix . keyName;
+		let lastKey = prefix . keyName;
 		let this->_lastKey = lastKey;
 		let cachedContent = redis->get(lastKey);
 
@@ -191,7 +200,7 @@ class Redis extends Backend
 			let prefixedKey = substr(lastKey, 5);
 		} else {
 			let prefixedKey = this->_prefix . keyName,
-				lastKey = "_PHCR" . prefixedKey,
+				lastKey = prefixedKey,
 				this->_lastKey = lastKey;
 		}
 
@@ -277,7 +286,7 @@ class Redis extends Backend
 	 */
 	public function delete(keyName) -> boolean
 	{
-		var redis, prefix, prefixedKey, lastKey, options, specialKey;
+		var redis, prefix, prefixedKey, options, specialKey;
 
 		let redis = this->_redis;
 		if typeof redis != "object" {
@@ -287,21 +296,20 @@ class Redis extends Backend
 
 		let prefix = this->_prefix;
 		let prefixedKey = prefix . keyName;
-		let lastKey = "_PHCR" . prefixedKey;
 		let options = this->_options;
 
 		if !fetch specialKey, options["statsKey"] {
 			throw new Exception("Unexpected inconsistency in options");
 		}
 
-		if specialKey != "" {
+		if specialKey !== false {
 			redis->sRem(specialKey, prefixedKey);
 		}
 
 		/**
 		* Delete the key from redis
 		*/
-		return (bool) redis->delete(lastKey);
+		return (bool) redis->delete(prefixedKey);
 	}
 
 	/**
@@ -326,8 +334,8 @@ class Redis extends Backend
 			throw new Exception("Unexpected inconsistency in options");
 		}
 
-		if specialKey == "" {
-			throw new Exception("Cached keys need to be enabled to use this function (options['statsKey'] == '_PHCM')!");
+		if specialKey === false {
+			throw new Exception("Cached keys need to be enabled to use this function (options['statsKey'] = 'specialKey')!");
 		}
 
 		/**
@@ -361,7 +369,7 @@ class Redis extends Backend
 			let lastKey = this->_lastKey;
 		} else {
 			let prefix = this->_prefix;
-			let lastKey = "_PHCR" . prefix . keyName;
+			let lastKey = prefix . keyName;
 		}
 
 		if lastKey {
@@ -398,7 +406,7 @@ class Redis extends Backend
 			let lastKey = this->_lastKey;
 		} else {
 			let prefix = this->_prefix;
-			let lastKey = "_PHCR" . prefix . keyName;
+			let lastKey = prefix . keyName;
 			let this->_lastKey = lastKey;
 		}
 
@@ -430,7 +438,7 @@ class Redis extends Backend
 			let lastKey = this->_lastKey;
 		} else {
 			let prefix = this->_prefix;
-			let lastKey = "_PHCR" . prefix . keyName;
+			let lastKey = prefix . keyName;
 			let this->_lastKey = lastKey;
 		}
 
@@ -446,7 +454,7 @@ class Redis extends Backend
 	 */
 	public function flush() -> boolean
 	{
-		var options, specialKey, redis, keys, key, lastKey;
+		var options, specialKey, redis, keys, key;
 
 		let options = this->_options;
 
@@ -461,16 +469,15 @@ class Redis extends Backend
 			let redis = this->_redis;
 		}
 
-		if specialKey == "" {
-			throw new Exception("Cached keys need to be enabled to use this function (options['statsKey'] == '_PHCR')!");
+		if specialKey === false {
+			throw new Exception("Cached keys need to be enabled to use this function (options['statsKey'] = 'specialKey')!");
 		}
 
 		let keys = redis->sMembers(specialKey);
 		if typeof keys == "array" {
 			for key in keys {
-				let lastKey = "_PHCR" . key;
 				redis->sRem(specialKey, key);
-				redis->delete(lastKey);
+				redis->delete(key);
 			}
 		}
 

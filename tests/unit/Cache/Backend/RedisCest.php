@@ -219,7 +219,7 @@ class RedisCest
         $cache = new Redis(new Data(['lifetime' => 20]), [
             'host'     => env('TEST_RS_HOST'),
             'port'     => env('TEST_RS_PORT'),
-            'statsKey' => '_PHCR'
+            'statsKey' => '_specialKey'
         ]);
 
         $key1 = '_PHCR' . 'data-flush-1';
@@ -228,8 +228,8 @@ class RedisCest
         $I->haveInRedis('string', $key1, 1);
         $I->haveInRedis('string', $key2, 2);
 
-        $I->haveInRedis('set', '_PHCR', 'data-flush-1');
-        $I->haveInRedis('set', '_PHCR', 'data-flush-2');
+        $I->haveInRedis('set', '_PHCR_specialKey', 'data-flush-1');
+        $I->haveInRedis('set', '_PHCR_specialKey', 'data-flush-2');
 
         $cache->save('data-flush-1', 1);
         $cache->save('data-flush-2', 2);
@@ -247,16 +247,16 @@ class RedisCest
         $cache = new Redis(new Data(['lifetime' => 20]), [
             'host'     => env('TEST_RS_HOST'),
             'port'     => env('TEST_RS_PORT'),
-            'statsKey' => '_PHCR'
+            'statsKey' => '_specialKey'
         ]);
 
-        $I->haveInRedis('string', '_PHCR' . 'a', 1);
-        $I->haveInRedis('string', '_PHCR' . 'b', 2);
-        $I->haveInRedis('string', '_PHCR' . 'c', 3);
+        $I->haveInRedis('string', '_PHCR_specialKey' . 'a', 1);
+        $I->haveInRedis('string', '_PHCR_specialKey' . 'b', 2);
+        $I->haveInRedis('string', '_PHCR_specialKey' . 'c', 3);
 
-        $I->haveInRedis('set', '_PHCR', 'a');
-        $I->haveInRedis('set', '_PHCR', 'b');
-        $I->haveInRedis('set', '_PHCR', 'c');
+        $I->haveInRedis('set', '_PHCR_specialKey', 'a');
+        $I->haveInRedis('set', '_PHCR_specialKey', 'b');
+        $I->haveInRedis('set', '_PHCR_specialKey', 'c');
 
         $keys = $cache->queryKeys();
         sort($keys);
@@ -274,7 +274,7 @@ class RedisCest
         ]);
 
         $I->expectException(
-            new Exception("Cached keys need to be enabled to use this function (options['statsKey'] == '_PHCM')!"),
+            new Exception("Cached keys need to be enabled to use this function (options['statsKey'] = 'specialKey')!"),
             function () use ($cache) {
                 $cache->queryKeys();
             }
